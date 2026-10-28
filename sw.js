@@ -2,7 +2,7 @@
 importScripts('i18n.js');
 
 const WORKER = 'https://myserver-api.darksky484.workers.dev';
-const ICON = 'icon-192.png', BADGE = 'badge-72.png';
+const ICON = 'icon-192.png?v=2', BADGE = 'badge-72.png';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
