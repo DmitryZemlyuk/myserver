@@ -12,16 +12,20 @@ async function savedLang() {
   return 'uk';
 }
 
-// An empty push comes from the Cloudflare watchdog (the server itself is down): ask it what happened.
-async function fromWatchdog(lang) {
+// The Cloudflare watchdog's push (the server itself is down / back): it says what happened ({type: 'watch'});
+// an empty one comes from an older Worker, then /watch is asked
+function watchText(lang, w) {
   const P = self.MS_I18N[lang].pn;
+  if (w.down) return w.agentOnly ? {title: P.agentT, body: P.agentB, tag: 'down', critical: true} : {title: P.downT, body: P.downB, tag: 'down', critical: true};
+  return {title: P.upT, body: w.min ? self.MS_FMT.fill(P.upB, {m: w.min}) : '', tag: 'down'};
+}
+async function fromWatchdog(lang) {
   try {
     const w = await (await fetch(WORKER + '/watch', {cache: 'no-store'})).json();
-    if (w.down) return w.agentOnly ? {title: P.agentT, body: P.agentB, tag: 'down', critical: true} : {title: P.downT, body: P.downB, tag: 'down', critical: true};
-    const m = w.lastDown && w.recoveredAt ? Math.max(1, Math.round((w.recoveredAt - w.lastDown) / 60000)) : null;
-    return {title: P.upT, body: m ? self.MS_FMT.fill(P.upB, {m}) : '', tag: 'down'};
+    const min = !w.down && w.lastDown && w.recoveredAt ? Math.max(1, Math.round((w.recoveredAt - w.lastDown) / 60000)) : null;
+    return watchText(lang, {down: w.down, agentOnly: w.agentOnly, min});
   } catch (e) {
-    return {title: P.downT, body: P.downB, tag: 'down', critical: true};
+    return watchText(lang, {down: true});
   }
 }
 
@@ -29,7 +33,7 @@ self.addEventListener('push', (e) => e.waitUntil((async () => {
   let m = null;
   try { m = e.data ? e.data.json() : null; } catch (x) { m = null; }
   const lang = (m && self.MS_I18N[m.lang] && m.lang) || await savedLang();
-  const n = m ? self.MS_FMT.pushText(lang, m) : await fromWatchdog(lang);
+  const n = m && m.type === 'watch' ? watchText(lang, m) : m ? self.MS_FMT.pushText(lang, m) : await fromWatchdog(lang);
   const P = self.MS_I18N[lang].pn;
   const opts = {
     body: n.body || '', tag: n.tag, renotify: true, icon: ICON, badge: BADGE,
