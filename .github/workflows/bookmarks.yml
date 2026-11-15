@@ -1,0 +1,43 @@
+name: Bookmarks sync
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bookmarks-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Pull bookmarks
+        run: node tools/bookmarks-sync.mjs
+        env:
+          CUB_TOKEN: ${{ secrets.CUB_TOKEN }}
+          CUB_PROFILE: ${{ secrets.CUB_PROFILE }}
+          TMDB_KEY: ${{ secrets.TMDB_KEY }}
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- bookmarks/data.json; then
+            echo "Nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add bookmarks/data.json
+          git commit -m "Bookmarks: sync with CUB"
+          git push
