@@ -81,16 +81,23 @@ async function tmdb(kind, id, lang) {
   return undefined;
 }
 
+// Adds Ukrainian/English titles and posters (pl.uk / pl.en; p is the Russian one from CUB).
+// Items that already have them keep the earlier values, so only new bookmarks hit TMDB.
 async function enrich(it, prev) {
-  if (prev && prev.t && prev.t.uk && prev.t.en) {
-    it.t.uk = prev.t.uk; it.t.en = prev.t.en;
+  if (prev && prev.t && prev.t.uk && prev.t.en && prev.pl) {
+    it.t.uk = prev.t.uk; it.t.en = prev.t.en; it.pl = prev.pl;
     it.p = it.p || prev.p; it.b = it.b || prev.b; it.y = it.y || prev.y;
-    if (it.y || prev.y === null) return;
+    return;
   }
   const [uk, en] = [await tmdb(it.k, it.id, 'uk-UA'), await tmdb(it.k, it.id, 'en-US')];
+  if (uk === undefined || en === undefined) { // TMDB hiccup: keep what we had, try again next run
+    if (prev) { it.t = {...prev.t, ...it.t}; it.p = it.p || prev.p; it.b = it.b || prev.b; it.y = it.y || prev.y; if (prev.pl) it.pl = prev.pl; }
+    return;
+  }
   const name = (d) => d && String(d.name || d.title || '').trim();
   if (uk) it.t.uk = name(uk);
   if (en) it.t.en = name(en);
+  it.pl = {uk: (uk && uk.poster_path) || null, en: (en && en.poster_path) || null};
   const d = en || uk;
   if (d) {
     it.p = it.p || d.poster_path || null;
@@ -125,7 +132,7 @@ if (TMDB_KEY) {
   console.log('TMDB_KEY is not set – posters and UA/EN titles are kept from the previous run');
   for (const it of items) {
     const p = prevMap.get(`${it.k}:${it.id}`);
-    if (p) { it.t = {...p.t, ...it.t}; it.p = it.p || p.p; it.b = it.b || p.b; it.y = it.y || p.y; }
+    if (p) { it.t = {...p.t, ...it.t}; it.p = it.p || p.p; it.b = it.b || p.b; it.y = it.y || p.y; if (p.pl) it.pl = p.pl; }
   }
 }
 
