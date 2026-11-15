@@ -4,7 +4,7 @@
 import {readFile, writeFile} from 'node:fs/promises';
 
 const OUT = 'bookmarks/data.json';
-const CUB_DOMAINS = ['cub.best', 'cub.red', 'cub.rip'];
+const CUB_DOMAINS = ['cub.best', 'cub.black'];
 const {CUB_TOKEN, CUB_PROFILE = ''} = process.env;
 const TMDB_KEY = process.env.TMDB_KEY || '4ef0d7355d9ffb5151e987764708ce96';
 
