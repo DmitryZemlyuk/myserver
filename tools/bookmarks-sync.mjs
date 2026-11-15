@@ -4,7 +4,7 @@
 import {readFile, writeFile} from 'node:fs/promises';
 
 const OUT = 'bookmarks/data.json';
-const CUB_DOMAINS = ['cub.red', 'cub.rip', 'cub.watch'];
+const CUB_DOMAINS = ['cub.best', 'cub.red', 'cub.rip'];
 const {CUB_TOKEN, CUB_PROFILE = ''} = process.env;
 const TMDB_KEY = process.env.TMDB_KEY || '4ef0d7355d9ffb5151e987764708ce96';
 
@@ -17,23 +17,30 @@ async function loadPrev() {
   try { return JSON.parse(await readFile(OUT, 'utf8')); } catch { return {items: []}; }
 }
 
+// The account token from Lampa goes in the "token" header; an OAuth access token goes in
+// "Authorization: Bearer". Both are tried, the profile id is sent in the "profile" header.
 async function fetchCub() {
+  const auths = [{token: CUB_TOKEN}, {authorization: 'Bearer ' + CUB_TOKEN}];
   for (const d of CUB_DOMAINS) {
-    try {
-      const r = await fetch(`https://${d}/api/bookmarks/all?full=1`, {
-        headers: {token: CUB_TOKEN, profile: String(CUB_PROFILE)},
-        signal: AbortSignal.timeout(30000),
-      });
-      if (!r.ok) { console.log(`${d}: HTTP ${r.status}`); continue; }
-      const j = await r.json();
-      const list = Array.isArray(j) ? j : (j.bookmarks || j.result || j.data);
-      if (Array.isArray(list)) { console.log(`${d}: ${list.length} bookmarks`); return list; }
-      console.log(`${d}: unexpected answer, keys: ${Object.keys(j).join(', ')}`);
-    } catch (e) {
-      console.log(`${d}: ${e.message}`);
+    for (const auth of auths) {
+      const how = auth.token ? 'token' : 'bearer';
+      try {
+        const r = await fetch(`https://${d}/api/bookmarks/all?full=1`, {
+          headers: {...auth, profile: String(CUB_PROFILE)},
+          signal: AbortSignal.timeout(30000),
+        });
+        const j = await r.json().catch(() => null);
+        if (j && j.error) { console.log(`${d} (${how}): error ${j.code || ''} ${j.text || j.message || ''}`.trim()); continue; }
+        if (!r.ok || !j) { console.log(`${d} (${how}): HTTP ${r.status}`); continue; }
+        const list = Array.isArray(j) ? j : (j.bookmarks || j.result || j.data);
+        if (Array.isArray(list)) { console.log(`${d} (${how}): ${list.length} bookmarks`); return list; }
+        console.log(`${d} (${how}): unexpected answer, keys: ${Object.keys(j).join(', ')}`);
+      } catch (e) {
+        console.log(`${d} (${how}): ${e.message}`);
+      }
     }
   }
-  throw new Error('CUB is unavailable or the answer format changed');
+  throw new Error('CUB is unavailable, the token is invalid or the answer format changed');
 }
 
 const isTv = (c) => !!(c.name || c.original_name || c.first_air_date || c.number_of_seasons || c.media_type === 'tv');
