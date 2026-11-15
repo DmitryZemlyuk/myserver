@@ -6,7 +6,7 @@ import {readFile, writeFile} from 'node:fs/promises';
 const OUT = 'bookmarks/data.json';
 const CUB_DOMAINS = ['cub.best', 'cub.black'];
 const {CUB_TOKEN, CUB_PROFILE = ''} = process.env;
-const TMDB_KEY = process.env.TMDB_KEY || '4ef0d7355d9ffb5151e987764708ce96';
+const TMDB_KEY = process.env.TMDB_KEY || '';
 
 if (!CUB_TOKEN) {
   console.log('CUB_TOKEN is not set – nothing to sync');
@@ -119,7 +119,15 @@ if (!items.length && (prev.items || []).length) {
   throw new Error('CUB returned no bookmarks – the token may have expired; the old list is kept');
 }
 
-await pool(items, 6, (it) => enrich(it, prevMap.get(`${it.k}:${it.id}`)));
+if (TMDB_KEY) {
+  await pool(items, 6, (it) => enrich(it, prevMap.get(`${it.k}:${it.id}`)));
+} else {
+  console.log('TMDB_KEY is not set – posters and UA/EN titles are kept from the previous run');
+  for (const it of items) {
+    const p = prevMap.get(`${it.k}:${it.id}`);
+    if (p) { it.t = {...p.t, ...it.t}; it.p = it.p || p.p; it.b = it.b || p.b; it.y = it.y || p.y; }
+  }
+}
 
 const same = JSON.stringify(items) === JSON.stringify(prev.items || []);
 if (same) {
