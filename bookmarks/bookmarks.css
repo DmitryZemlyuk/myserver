@@ -79,9 +79,9 @@
 .bm-person div{min-width:0}
 .bm-person b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bm-person span{display:block;font-size:13px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bm-kv{display:flex;justify-content:space-between;gap:16px;font-size:14px}
-.bm-kv span:first-child{color:var(--text3)}
-.bm-kv span:last-child{text-align:right}
+.bm-kv{display:flex;justify-content:space-between;align-items:baseline;gap:16px;font-size:14px}
+.bm-kv span:first-child{color:var(--text3);min-width:0}
+.bm-kv span:last-child{flex:none;max-width:62%;text-align:right;text-wrap:balance}
 .bm-note{font-size:13px;color:var(--text3)}
 .bm-skel{border-radius:10px;background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.12),rgba(255,255,255,.06));background-size:200% 100%;animation:bmsk 1.4s infinite linear;height:14px}
 @keyframes bmsk{to{background-position:-200% 0}}
