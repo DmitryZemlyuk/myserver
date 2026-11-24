@@ -1,8 +1,8 @@
 /* Notes – service worker: keeps the site itself for offline use (the notes are in IndexedDB, see app.js).
    The site's files are answered from the cache at once and refreshed in the background; a new VERSION here
    (bumped with every change of the site) makes the browser fetch all of them again. Requests to the server are not touched. */
-const VERSION = 'notes-v7';
-const FILES = ['./', 'index.html', 'style.css?v=7', 'i18n.js?v=7', 'app.js?v=7', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-180.png',
+const VERSION = 'notes-v8';
+const FILES = ['./', 'index.html', 'style.css?v=8', 'i18n.js?v=8', 'app.js?v=8', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'icon-180.png',
   '../fonts/manrope-latin-wght-normal.woff2', '../fonts/manrope-cyrillic-wght-normal.woff2', '../fonts/manrope-latin-ext-wght-normal.woff2',
   '../fonts/jetbrains-mono-latin-wght-normal.woff2', '../fonts/jetbrains-mono-cyrillic-wght-normal.woff2'];
 
