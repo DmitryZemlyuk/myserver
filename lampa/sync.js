@@ -14,7 +14,7 @@
   if (window.lsync_plugin) return;
   window.lsync_plugin = true;
 
-  var VERSION = '1.0.1';
+  var VERSION = '1.0.2';
   var API = 'https://myserver-api.darksky484.workers.dev/api/lampa';
   var PAGE = 2000;
   var CATS = ['like', 'wath', 'book', 'history', 'look', 'viewed', 'scheduled', 'continued', 'thrown'];
@@ -23,7 +23,7 @@
 
   // ------------------------------------------------------------------ language
   var STR = {
-    title: ['Синхронізація', 'Синхронизация', 'Sync'],
+    title: ['Мій сервер', 'Мой сервер', 'My Server'],
     st_off: ['Не підключено до сервера', 'Не подключено к серверу', 'Not connected to the server'],
     st_on: ['Підключено – мій сервер', 'Подключено – мой сервер', 'Connected – my server'],
     st_err: ['Сервер не відповідає', 'Сервер не отвечает', 'The server does not respond'],
