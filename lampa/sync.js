@@ -14,7 +14,7 @@
   if (window.lsync_plugin) return;
   window.lsync_plugin = true;
 
-  var VERSION = '1.0.0';
+  var VERSION = '1.0.1';
   var API = 'https://myserver-api.darksky484.workers.dev/api/lampa';
   var PAGE = 2000;
   var CATS = ['like', 'wath', 'book', 'history', 'look', 'viewed', 'scheduled', 'continued', 'thrown'];
@@ -559,7 +559,9 @@
             if (a.act === 'settings') {
               req('POST', '/backups', {action: 'get', file: a.file}).then(function (r) {
                 var data = r.data || {};
-                var jobs = Object.keys(data).filter(function (k) { return k.indexOf('lsync_') !== 0; }).map(function (k) {
+                // the synced data (bookmarks, marks, filters, search) is not taken from a settings backup: it would
+                // overwrite the server's newer copy on every device
+                var jobs = Object.keys(data).filter(function (k) { return k.indexOf('lsync_') !== 0 && !watched(k); }).map(function (k) {
                   try { return Lampa.Storage.restore ? Lampa.Storage.restore(k, data[k]) : (window.localStorage.setItem(k, data[k]), Promise.resolve(true)); }
                   catch (e) { return Promise.resolve(false); }
                 });
