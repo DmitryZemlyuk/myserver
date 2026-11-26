@@ -2,7 +2,7 @@ name: Bookmarks sync
 
 on:
   schedule:
-    - cron: '23 */6 * * *'
+    - cron: '23 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -26,6 +26,7 @@ jobs:
       - name: Pull bookmarks
         run: node tools/bookmarks-sync.mjs
         env:
+          LAMPA_TOKEN: ${{ secrets.LAMPA_TOKEN }}
           CUB_TOKEN: ${{ secrets.CUB_TOKEN }}
           CUB_PROFILE: ${{ secrets.CUB_PROFILE }}
           TMDB_KEY: ${{ secrets.TMDB_KEY }}

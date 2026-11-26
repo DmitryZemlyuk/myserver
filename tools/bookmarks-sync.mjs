@@ -1,16 +1,38 @@
-// Bookmarks sync: pulls the "book" bookmarks from CUB, adds Ukrainian/English titles and
-// posters from TMDB, and writes bookmarks/data.json. Runs from GitHub Actions; the file is
-// committed only when its content changes.
+// Bookmarks sync: pulls the "book" bookmarks – from the own server (Lampa sync, LAMPA_TOKEN) or, without
+// it, from CUB – adds Ukrainian/English titles and posters from TMDB, and writes bookmarks/data.json.
+// Runs from GitHub Actions; the file is committed only when its content changes.
 import {readFile, writeFile} from 'node:fs/promises';
 
 const OUT = 'bookmarks/data.json';
 const CUB_DOMAINS = ['cub.best', 'cub.black'];
-const {CUB_TOKEN, CUB_PROFILE = ''} = process.env;
+const {CUB_TOKEN, CUB_PROFILE = '', LAMPA_TOKEN = '', LAMPA_PROFILE = ''} = process.env;
 const TMDB_KEY = process.env.TMDB_KEY || '';
+const LAMPA_URL = process.env.LAMPA_URL || 'https://myserver-api.darksky484.workers.dev/api/lampa/export';
 
-if (!CUB_TOKEN) {
-  console.log('CUB_TOKEN is not set – nothing to sync');
+if (!CUB_TOKEN && !LAMPA_TOKEN) {
+  console.log('neither LAMPA_TOKEN nor CUB_TOKEN is set – nothing to sync');
   process.exit(0);
+}
+
+// The own server (agent/lampa.js): the profile's lists and cards, in the shape CUB answers with. A card's time is
+// the one it already has in data.json, else when the server first got it.
+async function fetchLampa(prevMap) {
+  const u = new URL(LAMPA_URL);
+  if (LAMPA_PROFILE) u.searchParams.set('profile', LAMPA_PROFILE);
+  const r = await fetch(u, {headers: {authorization: 'Bearer ' + LAMPA_TOKEN}, signal: AbortSignal.timeout(30000)});
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j || !j.lists) throw new Error(`own server: HTTP ${r.status}${j && j.error ? ' ' + j.error : ''}`);
+  const ids = j.lists.book || [];
+  const out = [];
+  for (const id of ids) {
+    const c = j.cards[id];
+    if (!c) continue;
+    const {_t, ...card} = c;
+    const k = isTv(card) ? 'tv' : 'movie', prev = prevMap.get(`${k}:${card.id}`);
+    out.push({type: 'book', data: card, time: (prev && prev.a) || _t || Date.now()});
+  }
+  console.log(`own server (profile ${j.profile && (j.profile.name || j.profile.id)}): ${out.length} bookmarks`);
+  return out;
 }
 
 async function loadPrev() {
@@ -113,7 +135,7 @@ async function pool(list, n, fn) {
 
 const prev = await loadPrev();
 const prevMap = new Map((prev.items || []).map((x) => [`${x.k}:${x.id}`, x]));
-const raw = await fetchCub();
+const raw = LAMPA_TOKEN ? await fetchLampa(prevMap) : await fetchCub();
 
 const seen = new Set();
 const items = raw
@@ -123,7 +145,7 @@ const items = raw
   .sort((a, b) => (b.a || 0) - (a.a || 0));
 
 if (!items.length && (prev.items || []).length) {
-  throw new Error('CUB returned no bookmarks – the token may have expired; the old list is kept');
+  throw new Error((LAMPA_TOKEN ? 'The own server' : 'CUB') + ' returned no bookmarks – the token may have expired; the old list is kept');
 }
 
 if (TMDB_KEY) {

@@ -1,6 +1,7 @@
 /* My Server – texts in Ukrainian, Russian and English (page + service worker). */
 self.MS_I18N = {
     uk: {
+      ev_episode: 'Нова серія: {list}',
       ev_weekly: 'Звіт за тиждень: аптайм {uptime} %, збоїв {fails}',
       pushT: {title: 'Пуш у браузері', enabledHere: 'Увімкнено на цьому пристрої', test: 'Надіслати тестовий', testSent: 'Надіслано – має прийти за кілька секунд',
         testFail: 'Не вдалося надіслати', off: 'Вимкнути тут', intro: 'Браузер покаже сповіщення, навіть коли вкладку закрито. Знадобиться дозвіл – браузер спитає один раз.',
@@ -14,7 +15,8 @@ self.MS_I18N = {
           disk: ['Диск заповнено понад 85 %', 'Один раз, і ще раз – коли повернеться нижче 80 %'], traffic: ['Трафік понад 80 % ліміту', 'Від 10 ТБ на місяць, не частіше разу на місяць'],
           cost: ['Витрати Oracle не $0', 'Cost Analysis за місяць, перевірка кожні 6 год'],
           reboot: ['Сервер перезавантажився', 'З версією ядра'], login: ['Вхід на дашборд', 'Кожен вхід і блокування після 5 невдалих спроб'],
-          weekly: ['Звіт за тиждень', 'Щонеділі о 10:00: аптайм, збої, трафік']},
+          weekly: ['Звіт за тиждень', 'Щонеділі о 10:00: аптайм, збої, трафік'],
+          episode: ['Нові серії', 'Серіали, за якими стежиш у Lampa: Telegram і push у день виходу']},
         quiet: 'Тихі години', quietTxt: '23:00 – 08:00 за Києвом: без звуку. Критичні – як завжди.',
         devices: 'Пристрої', thisDevice: 'цей пристрій', subscribed: 'Підписано {d}', lastPush: 'останній пуш {a}', noPush: 'пушів ще не було',
         failing: 'пуші не доходять – браузер, мабуть, скинув підписку', unsub: 'Відписати', noDevices: 'Жоден пристрій ще не підписано',
@@ -23,7 +25,7 @@ self.MS_I18N = {
       pn: {testT: 'Тестове сповіщення', testB: 'Пуші на цьому пристрої працюють', downT: 'Сервер не відповідає',
         downB: '3 перевірки поспіль з Cloudflare. Світло за графіком і clockweather теж недоступні.', agentT: 'Моніторинг не відповідає',
         agentB: 'Сам сервер живий: HTTPS і clockweather-push працюють.', upT: 'Сервер знову відповідає', upB: 'Був недоступний {m} хв',
-        weeklyT: 'Звіт за тиждень', weeklyB: 'Аптайм {u} · збоїв: {f} · трафік {t} · диск {d}', open: 'Відкрити', console: 'Консоль Oracle',
+        epT: 'Нова серія', epTn: 'Нові серії ({n})', weeklyT: 'Звіт за тиждень', weeklyB: 'Аптайм {u} · збоїв: {f} · трафік {t} · диск {d}', open: 'Відкрити', console: 'Консоль Oracle',
         svcDown: '{name} не працює', svcWarn: '{name}: попередження'},
       dns: {kHome: 'Дім', lastKnown: 'остання відома', unknown: 'невідома', kCache: 'Кеш', queries: 'Запити', blocked: 'Заблоковано', cache: 'З кешу', resp: 'Відповідь', noUpstream: 'без запиту назовні', avg: 'в середньому',
         chart24: 'Запити по годинах', chartDays: 'Запити по днях', allowed: 'Дозволено', tipQ: 'Запитів: {n}', tipB: 'Заблоковано: {n}', today: 'сьогодні',
@@ -79,7 +81,7 @@ self.MS_I18N = {
       m: {resp: 'Відповідь', subs: 'Підписки', ztoe: 'Запитів до ztoe/добу', last: 'Останній', next: 'Наступний', result: 'Результат',
         container: 'Контейнер', restarts: 'Перезапусків', online: 'Онлайн', hs: 'Хендшейк', neverN: 'Не підключались',
         conns: 'Підключень', size: 'Розмір', iface: 'Інтерфейс', fallback: 'Резервний', check: 'Перевірка', every: 'щохвилини', status: 'Статус', role: 'Роль', spareRole: 'запасний'},
-      names: {dns: 'DNS', svitlo: 'Світло за графіком', backup: 'Бекап svitlo', push: 'clockweather-push', notes: 'Нотатки', caddy: 'Caddy', proxy: 'Проксі Cloudflare', spare: 'Запасне ім’я dynv6',
+      names: {lampa: 'Lampa', dns: 'DNS', svitlo: 'Світло за графіком', backup: 'Бекап svitlo', push: 'clockweather-push', notes: 'Нотатки', caddy: 'Caddy', proxy: 'Проксі Cloudflare', spare: 'Запасне ім’я dynv6',
         wg: 'WireGuard', samba: 'Samba-шара', bot: 'Telegram-бот', system: 'Сервер', disk: 'Диск', traffic: 'Трафік', collector: 'Збирач', auth: 'Вхід'},
       r: {dot_fail: 'DoT не відповідає ({code})', dns_cert: 'сертифікат DoT спливає через {d} дн', dns_api: 'API Technitium не відповідає ({code})',
         dns_home: 'список блокує {d}', dns_list: 'список {n} не оновлюється: {msg}', dns_paused: 'блокування на паузі', dns_ok: 'DoT відповідає', dns_acl_none: 'DoT: домашня IP-адреса невідома, приставка без DNS', dns_acl_stale: 'доступ до DoT не оновлюється {min} хв', dns_acl_last: 'роутер не на зв’язку по WireGuard {min} хв, DoT за останньою домашньою IP',
@@ -114,6 +116,7 @@ self.MS_I18N = {
       days: ['нд', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'], label: 'УКР',
     },
     ru: {
+      ev_episode: 'Новая серия: {list}',
       ev_weekly: 'Отчёт за неделю: аптайм {uptime} %, сбоев {fails}',
       pushT: {title: 'Пуш в браузере', enabledHere: 'Включено на этом устройстве', test: 'Отправить тестовый', testSent: 'Отправлено – должно прийти через пару секунд',
         testFail: 'Не удалось отправить', off: 'Выключить здесь', intro: 'Браузер покажет уведомление, даже когда вкладка закрыта. Понадобится разрешение – браузер спросит один раз.',
@@ -127,7 +130,8 @@ self.MS_I18N = {
           disk: ['Диск заполнен больше 85 %', 'Один раз, и ещё раз – когда вернётся ниже 80 %'], traffic: ['Трафик больше 80 % лимита', 'От 10 ТБ в месяц, не чаще раза в месяц'],
           cost: ['Расходы Oracle не $0', 'Cost Analysis за месяц, проверка каждые 6 ч'],
           reboot: ['Сервер перезагрузился', 'С версией ядра'], login: ['Вход на дашборд', 'Каждый вход и блокировка после 5 неудачных попыток'],
-          weekly: ['Отчёт за неделю', 'По воскресеньям в 10:00: аптайм, сбои, трафик']},
+          weekly: ['Отчёт за неделю', 'По воскресеньям в 10:00: аптайм, сбои, трафик'],
+          episode: ['Новые серии', 'Сериалы, за которыми следишь в Lampa: Telegram и push в день выхода']},
         quiet: 'Тихие часы', quietTxt: '23:00 – 08:00 по Киеву: без звука. Критичные – как всегда.',
         devices: 'Устройства', thisDevice: 'это устройство', subscribed: 'Подписано {d}', lastPush: 'последний пуш {a}', noPush: 'пушей ещё не было',
         failing: 'пуши не доходят – браузер, видимо, сбросил подписку', unsub: 'Отписать', noDevices: 'Ни одно устройство ещё не подписано',
@@ -136,7 +140,7 @@ self.MS_I18N = {
       pn: {testT: 'Тестовое уведомление', testB: 'Пуши на этом устройстве работают', downT: 'Сервер не отвечает',
         downB: '3 проверки подряд из Cloudflare. Свет по графику и clockweather тоже недоступны.', agentT: 'Мониторинг не отвечает',
         agentB: 'Сам сервер жив: HTTPS и clockweather-push работают.', upT: 'Сервер снова отвечает', upB: 'Был недоступен {m} мин',
-        weeklyT: 'Отчёт за неделю', weeklyB: 'Аптайм {u} · сбоев: {f} · трафик {t} · диск {d}', open: 'Открыть', console: 'Консоль Oracle',
+        epT: 'Новая серия', epTn: 'Новые серии ({n})', weeklyT: 'Отчёт за неделю', weeklyB: 'Аптайм {u} · сбоев: {f} · трафик {t} · диск {d}', open: 'Открыть', console: 'Консоль Oracle',
         svcDown: '{name} не работает', svcWarn: '{name}: предупреждение'},
       dns: {kHome: 'Дом', lastKnown: 'последний известный', unknown: 'неизвестен', kCache: 'Кэш', queries: 'Запросы', blocked: 'Заблокировано', cache: 'Из кэша', resp: 'Ответ', noUpstream: 'без запроса наружу', avg: 'в среднем',
         chart24: 'Запросы по часам', chartDays: 'Запросы по дням', allowed: 'Разрешено', tipQ: 'Запросов: {n}', tipB: 'Заблокировано: {n}', today: 'сегодня',
@@ -192,7 +196,7 @@ self.MS_I18N = {
       m: {resp: 'Ответ', subs: 'Подписки', ztoe: 'Запросов к ztoe/сутки', last: 'Последний', next: 'Следующий', result: 'Результат',
         container: 'Контейнер', restarts: 'Перезапусков', online: 'Онлайн', hs: 'Хендшейк', neverN: 'Не подключались',
         conns: 'Подключений', size: 'Размер', iface: 'Интерфейс', fallback: 'Запасной', check: 'Проверка', every: 'раз в минуту', status: 'Статус', role: 'Роль', spareRole: 'запасной'},
-      names: {dns: 'DNS', svitlo: 'Свет по графику', backup: 'Бэкап svitlo', push: 'clockweather-push', notes: 'Заметки', caddy: 'Caddy', proxy: 'Прокси Cloudflare', spare: 'Запасное имя dynv6',
+      names: {lampa: 'Lampa', dns: 'DNS', svitlo: 'Свет по графику', backup: 'Бэкап svitlo', push: 'clockweather-push', notes: 'Заметки', caddy: 'Caddy', proxy: 'Прокси Cloudflare', spare: 'Запасное имя dynv6',
         wg: 'WireGuard', samba: 'Samba-шара', bot: 'Telegram-бот', system: 'Сервер', disk: 'Диск', traffic: 'Трафик', collector: 'Сборщик', auth: 'Вход'},
       r: {dot_fail: 'DoT не отвечает ({code})', dns_cert: 'сертификат DoT истекает через {d} дн', dns_api: 'API Technitium не отвечает ({code})',
         dns_home: 'список блокирует {d}', dns_list: 'список {n} не обновляется: {msg}', dns_paused: 'блокировка на паузе', dns_ok: 'DoT отвечает', dns_acl_none: 'DoT: домашний IP неизвестен, приставка без DNS', dns_acl_stale: 'доступ к DoT не обновляется {min} мин', dns_acl_last: 'роутер не на связи по WireGuard {min} мин, DoT по последнему домашнему IP',
@@ -227,6 +231,7 @@ self.MS_I18N = {
       days: ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'], label: 'РУС',
     },
     en: {
+      ev_episode: 'New episode: {list}',
       ev_weekly: 'Weekly report: uptime {uptime}%, {fails} outages',
       pushT: {title: 'Browser push', enabledHere: 'On for this device', test: 'Send a test', testSent: 'Sent – it should arrive in a few seconds',
         testFail: 'Could not send', off: 'Turn off here', intro: 'The browser shows a notification even when the tab is closed. It asks for permission once.',
@@ -240,7 +245,8 @@ self.MS_I18N = {
           disk: ['Disk over 85% full', 'Once, and again when it drops below 80%'], traffic: ['Traffic over 80% of the limit', 'Of 10 TB a month, at most once a month'],
           cost: ['Oracle spending above $0', 'Cost Analysis for the month, checked every 6 h'],
           reboot: ['The server rebooted', 'With the kernel version'], login: ['Dashboard login', 'Every login and a lockout after 5 failed attempts'],
-          weekly: ['Weekly report', 'Sundays at 10:00: uptime, outages, traffic']},
+          weekly: ['Weekly report', 'Sundays at 10:00: uptime, outages, traffic'],
+          episode: ['New episodes', 'Series you follow in Lampa: Telegram and push on the release day']},
         quiet: 'Quiet hours', quietTxt: '23:00 – 08:00 Kyiv time: silent. Critical ones as usual.',
         devices: 'Devices', thisDevice: 'this device', subscribed: 'Subscribed {d}', lastPush: 'last push {a}', noPush: 'no pushes yet',
         failing: 'pushes are not arriving – the browser probably dropped the subscription', unsub: 'Unsubscribe', noDevices: 'No device is subscribed yet',
@@ -249,7 +255,7 @@ self.MS_I18N = {
       pn: {testT: 'Test notification', testB: 'Push works on this device', downT: 'The server is not responding',
         downB: '3 checks in a row from Cloudflare. Outage Schedule and clockweather are down too.', agentT: 'Monitoring is not responding',
         agentB: 'The server itself is up: HTTPS and clockweather-push work.', upT: 'The server is responding again', upB: 'It was down for {m} min',
-        weeklyT: 'Weekly report', weeklyB: 'Uptime {u} · outages: {f} · traffic {t} · disk {d}', open: 'Open', console: 'Oracle console',
+        epT: 'New episode', epTn: 'New episodes ({n})', weeklyT: 'Weekly report', weeklyB: 'Uptime {u} · outages: {f} · traffic {t} · disk {d}', open: 'Open', console: 'Oracle console',
         svcDown: '{name} is down', svcWarn: '{name}: warning'},
       dns: {kHome: 'Home', lastKnown: 'last known', unknown: 'unknown', kCache: 'Cache', queries: 'Queries', blocked: 'Blocked', cache: 'From cache', resp: 'Response', noUpstream: 'no upstream query', avg: 'average',
         chart24: 'Queries by hour', chartDays: 'Queries by day', allowed: 'Allowed', tipQ: 'Queries: {n}', tipB: 'Blocked: {n}', today: 'today',
@@ -305,7 +311,7 @@ self.MS_I18N = {
       m: {resp: 'Response', subs: 'Subscribers', ztoe: 'ztoe requests/day', last: 'Last', next: 'Next', result: 'Result',
         container: 'Container', restarts: 'Restarts', online: 'Online', hs: 'Handshake', neverN: 'Never seen',
         conns: 'Connections', size: 'Size', iface: 'Interface', fallback: 'Fallback', check: 'Check', every: 'every minute', status: 'Status', role: 'Role', spareRole: 'spare'},
-      names: {dns: 'DNS', svitlo: 'Outage Schedule', backup: 'svitlo backup', push: 'clockweather-push', notes: 'Notes', caddy: 'Caddy', proxy: 'Cloudflare proxy', spare: 'Spare name (dynv6)',
+      names: {lampa: 'Lampa', dns: 'DNS', svitlo: 'Outage Schedule', backup: 'svitlo backup', push: 'clockweather-push', notes: 'Notes', caddy: 'Caddy', proxy: 'Cloudflare proxy', spare: 'Spare name (dynv6)',
         wg: 'WireGuard', samba: 'Samba share', bot: 'Telegram bot', system: 'Server', disk: 'Disk', traffic: 'Traffic', collector: 'Collector', auth: 'Login'},
       r: {dot_fail: 'DoT not responding ({code})', dns_cert: 'DoT certificate expires in {d} d', dns_api: 'Technitium API not responding ({code})',
         dns_home: 'a list blocks {d}', dns_list: 'list {n} is not updating: {msg}', dns_paused: 'blocking paused', dns_ok: 'DoT responding', dns_acl_none: 'DoT: home IP unknown, the TV box has no DNS', dns_acl_stale: 'DoT access list not refreshed for {min} min', dns_acl_last: 'router off WireGuard for {min} min, DoT on the last known home IP',
@@ -356,6 +362,10 @@ self.MS_FMT = (function () {
   function pushText(lang, m) {
     const T = I[lang], P = T.pn, d = m.data || {}, name = T.names[m.svc] || m.svc || T.brand;
     if (m.type === 'test') return {title: P.testT, body: P.testB, tag: 'test'};
+    if (m.type === 'episode' || d.k === 'episode') {
+      const it = Array.isArray(d.items) ? d.items : [], ep = (x) => `${x.n} ${x.s}×${String(x.e).padStart(2, '0')}`;
+      return {title: it.length > 1 ? fill(P.epTn, {n: it.length}) : P.epT, body: it.slice(0, 6).map(ep).join(', '), tag: 'episode', url: 'bookmarks/'};
+    }
     if (m.type === 'weekly') return {title: P.weeklyT, tag: 'weekly', view: 'res',
       body: fill(P.weeklyB, {u: d.uptime == null ? '–' : pct(lang, d.uptime, d.uptime >= 99.95 ? 0 : 2), f: d.fails || 0, t: bytes(lang, d.traffic || 0), d: d.disk == null ? '–' : pct(lang, d.disk)})};
     if (d.k === 'svc') {

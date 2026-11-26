@@ -38,7 +38,7 @@ self.addEventListener('push', (e) => e.waitUntil((async () => {
   const opts = {
     body: n.body || '', tag: n.tag, renotify: true, icon: ICON, badge: BADGE,
     silent: !!(m && m.silent), timestamp: (m && m.ts) || Date.now(), requireInteraction: !!n.critical,
-    data: {view: n.view || 'overview'},
+    data: {view: n.view || 'overview', url: n.url || null},
     actions: n.critical ? [{action: 'open', title: P.open}, {action: 'console', title: P.console}] : [{action: 'open', title: P.open}],
   };
   return self.registration.showNotification(n.title, opts);
@@ -47,6 +47,9 @@ self.addEventListener('push', (e) => e.waitUntil((async () => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   if (e.action === 'console') { e.waitUntil(self.clients.openWindow('https://cloud.oracle.com')); return; }
+  // a new-episode push opens the bookmarks page (next to the dashboard), the rest the dashboard's view
+  const page = e.notification.data && e.notification.data.url;
+  if (page) { e.waitUntil(self.clients.openWindow(new URL(page, self.registration.scope).href)); return; }
   const url = new URL('./#' + ((e.notification.data && e.notification.data.view) || 'overview'), self.registration.scope).href;
   e.waitUntil((async () => {
     const all = await self.clients.matchAll({type: 'window', includeUncontrolled: true});
