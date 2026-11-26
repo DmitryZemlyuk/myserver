@@ -14,7 +14,7 @@
   if (window.lsync_plugin) return;
   window.lsync_plugin = true;
 
-  var VERSION = '1.0.2';
+  var VERSION = '1.0.4';
   var API = 'https://myserver-api.darksky484.workers.dev/api/lampa';
   var PAGE = 2000;
   var CATS = ['like', 'wath', 'book', 'history', 'look', 'viewed', 'scheduled', 'continued', 'thrown'];
@@ -99,6 +99,15 @@
     restore_q: ['Відновити? Поточні дані буде замінено.', 'Восстановить? Текущие данные будут заменены.', 'Restore? The current data will be replaced.'],
     restored: ['Відновлено. Lampa перезапуститься', 'Восстановлено. Lampa перезапустится', 'Restored. Lampa will restart'],
     restored_data: ['Відновлено', 'Восстановлено', 'Restored'],
+    restore: ['Відновити', 'Восстановить', 'Restore'],
+    delete: ['Видалити', 'Удалить', 'Delete'],
+    deleted: ['Видалено', 'Удалено', 'Deleted'],
+    delete_q: ['Видалити цей бекап?', 'Удалить этот бэкап?', 'Delete this backup?'],
+    keep_note: ['Автоматичні – останні 7 на пристрій, усе інше – 30 днів', 'Автоматические – последние 7 на устройство, остальные – 30 дней',
+      'Automatic ones – the last 7 per device, the rest – 30 days'],
+    rename: ['Перейменувати', 'Переименовать', 'Rename'],
+    device_name: ['Назва пристрою', 'Название устройства', 'Device name'],
+    disconnect_one: ['Від’єднати', 'Отключить', 'Disconnect'],
     auto_backup: ['Бекап налаштувань раз на добу', 'Бэкап настроек раз в сутки', 'Daily settings backup'],
     ask_profile: ['Питати профіль під час запуску', 'Спрашивать профиль при запуске', 'Ask for the profile at start'],
     devices: ['Пристрої', 'Устройства', 'Devices'],
@@ -150,7 +159,7 @@
   function lsGet(k, d) { try { var v = window.localStorage.getItem('lsync_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   function lsSet(k, v) { try { window.localStorage.setItem('lsync_' + k, JSON.stringify(v)); } catch (e) { /* quota: the next run sends again */ } }
   function lsDel(k) { try { window.localStorage.removeItem('lsync_' + k); } catch (e) { /* */ } }
-  function on(name) { var v = Lampa.Storage.field(name); return v !== false && v !== 'false'; }
+  function on(name) { var v = Lampa.Storage.field(name); return v !== false && v !== 'false' && v !== 'off'; }
 
   // ------------------------------------------------------------------ network
   function req(method, path, body) {
@@ -453,7 +462,8 @@
     try { tv = Lampa.Platform.screen('tv'); } catch (e) { /* */ }
     var base = map[plat] || plat || 'Lampa';
     if (plat === 'android' && tv) base = 'Android TV';
-    return {name: (own && String(own).trim()) || 'Lampa – ' + base, platform: plat};
+    own = String(own || '').trim();
+    return {name: own && own.toLowerCase() !== 'lampa' ? own : 'Lampa – ' + base, platform: plat};
   }
   function pair() {
     var d = deviceName(), poll = null, closed = false;
@@ -544,38 +554,66 @@
   function backupsMenu() {
     var back = function () { Lampa.Controller.toggle('settings_component'); };
     req('GET', '/backups').then(function (j) {
-      var items = [{title: t('backup_now'), act: 'save'}];
       var sets = j.backups.filter(function (b) { return b.kind === 'settings'; });
       var datas = j.backups.filter(function (b) { return b.kind === 'data'; });
-      if (sets.length) items.push({title: t('restore_settings'), separator: true});
-      sets.slice(0, 30).forEach(function (b) { items.push({title: fmtDate(b.at), subtitle: (b.device || '') + (b.auto ? ' · ' + t('auto') : ''), act: 'settings', file: b.file}); });
-      if (datas.length) items.push({title: t('restore_data'), separator: true});
-      datas.slice(0, 30).forEach(function (b) { items.push({title: fmtDate(b.at), act: 'data', file: b.file}); });
       Lampa.Select.show({
-        title: t('backups'), items: items, onBack: back,
+        title: t('backups'), onBack: back,
+        items: [{title: t('backup_now'), act: 'save'},
+          {title: t('restore_settings'), subtitle: sets.length + ' · ' + t('keep_note'), act: 'settings', noenter: !sets.length},
+          {title: t('restore_data'), subtitle: String(datas.length), act: 'data', noenter: !datas.length}],
         onSelect: function (a) {
           if (a.act === 'save') { backupSettings(false).then(back); return; }
-          confirm(t('restore_q'), function () {
-            if (a.act === 'settings') {
-              req('POST', '/backups', {action: 'get', file: a.file}).then(function (r) {
-                var data = r.data || {};
-                // the synced data (bookmarks, marks, filters, search) is not taken from a settings backup: it would
-                // overwrite the server's newer copy on every device
-                var jobs = Object.keys(data).filter(function (k) { return k.indexOf('lsync_') !== 0 && !watched(k); }).map(function (k) {
-                  try { return Lampa.Storage.restore ? Lampa.Storage.restore(k, data[k]) : (window.localStorage.setItem(k, data[k]), Promise.resolve(true)); }
-                  catch (e) { return Promise.resolve(false); }
-                });
-                Promise.all(jobs).then(function () { noty('restored'); setTimeout(function () { window.location.reload(); }, 3000); });
-              }, function () { noty('fail'); back(); });
-            } else {
-              req('POST', '/restore', {file: a.file, profile: profileId()}).then(function () {
-                noty('restored_data'); back(); syncNow(false);
-              }, function () { noty('fail'); back(); });
-            }
-          }, back);
+          backupList(a.act, a.act === 'settings' ? sets : datas);
         }
       });
     }, function () { noty('pair_fail'); });
+  }
+  function backupList(kind, list) {
+    var up = function () { backupsMenu(); };
+    if (!list.length) return up();
+    Lampa.Select.show({
+      title: t(kind === 'settings' ? 'restore_settings' : 'restore_data'), onBack: up,
+      items: list.slice(0, 60).map(function (b) {
+        return {title: fmtDate(b.at), subtitle: kind === 'settings' ? (b.device || '') + (b.auto ? ' · ' + t('auto') : '') : '', file: b.file};
+      }),
+      onSelect: function (b) {
+        var again = function () { backupList(kind, list); };
+        Lampa.Select.show({
+          title: b.title, onBack: again,
+          items: [{title: t('restore'), act: 'restore'}, {title: t('delete'), act: 'delete'}],
+          onSelect: function (x) {
+            if (x.act === 'delete') {
+              confirm(t('delete_q'), function () {
+                req('POST', '/backups', {action: 'delete', file: b.file}).then(function () {
+                  noty('deleted'); list = list.filter(function (y) { return y.file !== b.file; }); backupList(kind, list);
+                }, function () { noty('fail'); again(); });
+              }, again);
+              return;
+            }
+            confirm(t('restore_q'), function () { restoreBackup(kind, b.file); }, again);
+          }
+        });
+      }
+    });
+  }
+  function restoreBackup(kind, file) {
+    var back = function () { Lampa.Controller.toggle('settings_component'); };
+    if (kind === 'settings') {
+      req('POST', '/backups', {action: 'get', file: file}).then(function (r) {
+        var data = r.data || {};
+        // the synced data (bookmarks, marks, filters, search) is not taken from a settings backup: it would
+        // overwrite the server's newer copy on every device
+        var jobs = Object.keys(data).filter(function (k) { return k.indexOf('lsync_') !== 0 && !watched(k); }).map(function (k) {
+          try { return Lampa.Storage.restore ? Lampa.Storage.restore(k, data[k]) : (window.localStorage.setItem(k, data[k]), Promise.resolve(true)); }
+          catch (e) { return Promise.resolve(false); }
+        });
+        Promise.all(jobs).then(function () { noty('restored'); setTimeout(function () { window.location.reload(); }, 3000); });
+      }, function () { noty('fail'); back(); });
+    } else {
+      req('POST', '/restore', {file: file, profile: profileId()}).then(function () {
+        noty('restored_data'); back(); syncNow(false);
+      }, function () { noty('fail'); back(); });
+    }
   }
 
   // ------------------------------------------------------------------ devices
@@ -588,9 +626,24 @@
           return {title: d.name + (d.me ? ' (' + t('this_device') + ')' : ''), subtitle: t('seen', {a: ago(d.seen)}), id: d.id, me: d.me, name: d.name};
         }),
         onSelect: function (a) {
-          confirm(t('revoke_q', {n: a.name}), function () {
-            req('POST', '/devices/revoke', {id: a.id}).then(function () { if (a.me) forget(false); back(); reopenSettings(); }, function () { noty('fail'); back(); });
-          }, back);
+          var again = function () { devicesMenu(); };
+          Lampa.Select.show({
+            title: a.name, onBack: again,
+            items: [{title: t('rename'), act: 'rename'}, {title: t('disconnect_one'), act: 'revoke'}],
+            onSelect: function (x) {
+              if (x.act === 'rename') {
+                Lampa.Input.edit({free: true, title: t('device_name'), nosave: true, value: a.name}, function (name) {
+                  name = String(name || '').trim();
+                  if (!name || name === a.name) return again();
+                  req('POST', '/devices/rename', {id: a.id, name: name}).then(again, function () { noty('fail'); again(); });
+                });
+                return;
+              }
+              confirm(t('revoke_q', {n: a.name}), function () {
+                req('POST', '/devices/revoke', {id: a.id}).then(function () { if (a.me) forget(false); back(); reopenSettings(); }, function () { noty('fail'); again(); });
+              }, again);
+            }
+          });
         }
       });
     }, function () { noty('pair_fail'); });
@@ -801,7 +854,10 @@
     } catch (e) { /* */ }
   }
   function param(p) { p.component = 'lsync'; Lampa.SettingsApi.addParam(p); }
-  function onlyIf(cond) { return function (item) { if (!cond()) item.remove(); }; }
+  function YESNO() { return {on: t('yes'), off: t('no')}; }
+  // Lampa calls onRender before the item is on the page (remove() would not stick): hidden and out of the navigation
+  function hideItem(item) { item.removeClass('selector').addClass('hide').css('display', 'none'); }
+  function onlyIf(cond) { return function (item) { if (!cond()) hideItem(item); }; }
   var connected = function () { return !!lsGet('token', ''); };
 
   Lampa.SettingsApi.addComponent({
@@ -819,7 +875,7 @@
   param({param: {name: 'lsync_profile_title', type: 'title'}, field: {name: t('profile')}, onRender: onlyIf(connected)});
   param({param: {name: 'lsync_profile_line', type: 'static'}, field: {name: t('profile')},
     onRender: function (item) {
-      if (!connected()) return item.remove();
+      if (!connected()) return hideItem(item);
       item.find('.settings-param__name').text(profileName(profileOf(profileId())) || '–');
       if (cubOn()) item.append($('<div class="settings-param__descr"></div>').text(t('profile_cub')));
     }});
@@ -827,19 +883,19 @@
     onRender: onlyIf(function () { return connected() && !cubOn(); }),
     onChange: function () { refreshMe().then(function () { whoIsWatching(function () { Lampa.Controller.toggle('settings_component'); }); }, function () { noty('pair_fail'); }); }});
   param({param: {name: 'lsync_profiles', type: 'button'}, field: {name: t('profiles_manage')}, onRender: onlyIf(function () { return connected() && !cubOn(); }), onChange: profilesMenu});
-  param({param: {name: 'lsync_ask_profile', type: 'trigger', default: true}, field: {name: t('ask_profile')}, onRender: onlyIf(function () { return connected() && !cubOn(); })});
+  param({param: {name: 'lsync_ask_profile', type: 'select', values: YESNO(), default: 'on'}, field: {name: t('ask_profile')}, onRender: onlyIf(function () { return connected() && !cubOn(); })});
   param({param: {name: 'lsync_what', type: 'title'}, field: {name: t('what')}});
-  param({param: {name: 'lsync_fav', type: 'trigger', default: true}, field: {name: t('fav'), description: t('fav_d')}, onChange: function () { schedule(1000); }});
-  param({param: {name: 'lsync_marks', type: 'trigger', default: true}, field: {name: t('marks'), description: t('marks_d')}, onChange: function () { schedule(1000); }});
-  param({param: {name: 'lsync_filters', type: 'trigger', default: true}, field: {name: t('filters'), description: t('filters_d')}, onChange: function () { schedule(1000); }});
-  param({param: {name: 'lsync_search', type: 'trigger', default: true}, field: {name: t('search'), description: t('search_d')}, onChange: function () { schedule(1000); }});
+  param({param: {name: 'lsync_fav', type: 'select', values: YESNO(), default: 'on'}, field: {name: t('fav'), description: t('fav_d')}, onChange: function () { schedule(1000); }});
+  param({param: {name: 'lsync_marks', type: 'select', values: YESNO(), default: 'on'}, field: {name: t('marks'), description: t('marks_d')}, onChange: function () { schedule(1000); }});
+  param({param: {name: 'lsync_filters', type: 'select', values: YESNO(), default: 'on'}, field: {name: t('filters'), description: t('filters_d')}, onChange: function () { schedule(1000); }});
+  param({param: {name: 'lsync_search', type: 'select', values: YESNO(), default: 'on'}, field: {name: t('search'), description: t('search_d')}, onChange: function () { schedule(1000); }});
   param({param: {name: 'lsync_notify_title', type: 'title'}, field: {name: t('notify')}});
   param({param: {name: 'lsync_notify_line', type: 'static'}, field: {name: t('followed', {n: 0}), description: t('notify_d')},
     onRender: function (item) { item.find('.settings-param__name').text(t('followed', {n: Object.keys(followList()).length})); }});
   param({param: {name: 'lsync_actions', type: 'title'}, field: {name: t('actions')}, onRender: onlyIf(connected)});
   param({param: {name: 'lsync_now', type: 'button'}, field: {name: t('now')}, onRender: onlyIf(connected), onChange: function () { syncNow(true); }});
   param({param: {name: 'lsync_backups', type: 'button'}, field: {name: t('backups')}, onRender: onlyIf(connected), onChange: backupsMenu});
-  param({param: {name: 'lsync_auto_backup', type: 'trigger', default: true}, field: {name: t('auto_backup')}, onRender: onlyIf(connected)});
+  param({param: {name: 'lsync_auto_backup', type: 'select', values: YESNO(), default: 'on'}, field: {name: t('auto_backup')}, onRender: onlyIf(connected)});
   param({param: {name: 'lsync_devices', type: 'button'}, field: {name: t('devices')}, onRender: onlyIf(connected), onChange: devicesMenu});
   param({param: {name: 'lsync_disconnect', type: 'button'}, field: {name: t('disconnect')}, onRender: onlyIf(connected),
     onChange: function () { confirm(t('disconnect_q'), function () { forget(false); reopenSettings(true); }, function () { Lampa.Controller.toggle('settings_component'); }); }});
